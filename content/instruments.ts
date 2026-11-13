@@ -6,7 +6,9 @@ export type InstrumentId =
   | "cilokaq"
   | "serune"
   | "genang"
-  | "silu";
+  | "silu"
+  | "gambo"
+  | "rebana";
 
 export interface InstrumentPart {
   /** Nama mesh di scene 3D. */
@@ -23,11 +25,23 @@ export interface Instrument {
   kind: string;
   note: string;
   detail: string;
+  documentation?: {
+    aliases: string;
+    origin: string;
+    playing: string;
+    materials: string;
+    sources: { label: string; url: string }[];
+  };
   emoji: string;
   /** Frekuensi dasar untuk sintesis suara. */
   tone: number;
   parts: InstrumentPart[];
 }
+
+const ntbReference = {
+  label: "Peralatan Hiburan dan Kesenian Tradisional Daerah Nusa Tenggara Barat (1988)",
+  url: "https://repositori.kemendikdasmen.go.id/12366/1/Peralatan%20Hiburan%20dan%20Kesenian%20Tradisional%20Daerah%20Nusa%20Tenggara%20Barat.pdf",
+};
 
 export const instruments: Instrument[] = [
   {
@@ -131,6 +145,61 @@ export const instruments: Instrument[] = [
       { id: "corong", label: "Corong", hint: "Corong membentuk warna nada" },
       { id: "lubang", label: "Lubang nada", hint: "Lubang mengatur melodi" },
       { id: "badan", label: "Badan", hint: "Tabung kayu yang panjang" },
+    ],
+  },
+  {
+    id: "gambo",
+    name: "Gambo",
+    culture: "Mbojo",
+    place: "Bima · Dompu",
+    kind: "Kordofon",
+    note: "Alat musik petik tradisional Mbojo",
+    detail:
+      "Gambo menyerupai gambus dan menghasilkan bunyi dari getaran dawai yang dipetik. Badannya berfungsi sebagai ruang resonansi. Pada beberapa bentuk tradisional, bagian muka resonator ditutup kulit hewan. Gambo digunakan untuk mengiringi nyanyian dan menjadi bagian dari hiburan serta kesenian masyarakat setempat.",
+    documentation: {
+      aliases: "Gambo, Gambus Bima",
+      origin: "Masyarakat Mbojo di Bima–Dompu, antara lain di Kecamatan Sanggar, Kabupaten Bima.",
+      playing: "Dipetik.",
+      materials: "Badan kayu, kulit hewan sebagai penutup resonator, dan dawai.",
+      sources: [
+        { label: "Artikel dan foto Gambo (IDN Times NTB)", url: "https://ntb.idntimes.com/news/ntb/mengenal-alat-musik-gambo-dari-kabupaten-bima-di-ntb-00-lm183-2bjhyg" },
+        { label: "Pencarian foto Gambo Bima (Google Gambar)", url: "https://www.google.com/search?tbm=isch&q=alat+musik+Gambo+tradisional+Bima" },
+        ntbReference,
+      ],
+    },
+    emoji: "♬",
+    tone: 294,
+    parts: [
+      { id: "dawai", label: "Dawai", hint: "Klik dawai untuk memetik" },
+      { id: "badan", label: "Badan", hint: "Badan kayu menjadi ruang resonansi" },
+      { id: "leher", label: "Leher", hint: "Leher menopang dawai" },
+    ],
+  },
+  {
+    id: "rebana",
+    name: "Rebana (Arubana)",
+    culture: "Mbojo",
+    place: "Bima · Dompu",
+    kind: "Membranofon",
+    note: "Tabuhan rebana dalam tradisi Mbojo",
+    detail:
+      "Rebana berbentuk bundar dan berbunyi ketika membrannya bergetar saat ditabuh. Dalam tradisi Mbojo, Arubana mengiringi kesenian, syair atau zikir keagamaan, serta acara adat. Bentuk, ukuran, dan namanya bervariasi antardaerah. Katipu adalah sebutan untuk rebana pengiring dalam tradisi Biola Katipu.",
+    documentation: {
+      aliases: "Rebana, Arubana (Bima–Dompu)",
+      origin: "Digunakan di Bima–Dompu, Lombok, Sumbawa, serta di luar NTB.",
+      playing: "Ditabuh dengan telapak tangan dan jari.",
+      materials: "Bingkai kayu dan membran kulit hewan. Bahan dan konstruksinya dapat bervariasi.",
+      sources: [
+        { label: "Dokumentasi Arubana (Budaya Indonesia)", url: "https://budaya-indonesia.org/Arubana/" },
+        { label: "Pencarian foto Arubana Bima–Dompu (Google Gambar)", url: "https://www.google.com/search?tbm=isch&q=arubana+rebana+tradisional+Bima+Dompu" },
+        ntbReference,
+      ],
+    },
+    emoji: "◉",
+    tone: 180,
+    parts: [
+      { id: "kulit", label: "Membran", hint: "Klik membran untuk menabuh" },
+      { id: "bingkai", label: "Bingkai", hint: "Bingkai kayu menopang membran" },
     ],
   },
 ];

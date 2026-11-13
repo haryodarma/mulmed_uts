@@ -565,7 +565,56 @@ function buildSilu(): THREE.Group {
   return group;
 }
 
+function buildGambo(): THREE.Group {
+  const group = new THREE.Group();
+  const bowl = new THREE.SphereGeometry(1, 32, 24, 0, Math.PI * 2, 0, Math.PI / 2);
+  bowl.rotateX(-Math.PI / 2);
+  const body = addMesh(group, bowl, woodMaterial(), "badan");
+  body.scale.set(0.52, 0.65, 0.32);
+  body.position.set(0, 0.78, 0.13);
+
+  const face = addMesh(group, new THREE.CircleGeometry(1, 48), skinMaterial(), "badan");
+  face.scale.set(0.52, 0.65, 1);
+  face.position.set(0, 0.78, 0.13);
+
+  const neck = addMesh(group, new THREE.BoxGeometry(0.19, 1.43, 0.16), darkWoodMaterial(), "leher");
+  neck.position.set(0, 1.92, 0.08);
+  const bridge = addMesh(group, new THREE.BoxGeometry(0.3, 0.055, 0.09), darkWoodMaterial(), "badan");
+  bridge.position.set(0, 0.55, 0.17);
+
+  for (const x of [-0.06, -0.02, 0.02, 0.06]) {
+    const string = addMesh(group, new THREE.CylinderGeometry(0.006, 0.006, 1.98, 8), brassMaterial(), "dawai");
+    string.position.set(x, 1.54, 0.21);
+  }
+
+  return group;
+}
+
+function buildRebana(): THREE.Group {
+  const group = new THREE.Group();
+  const frame = addMesh(
+    group,
+    new THREE.RingGeometry(0.81, 0.91, 48),
+    woodMaterial(),
+    "bingkai",
+  );
+  frame.position.set(0, 1.3, 0.15);
+  const side = addMesh(
+    group,
+    new THREE.CylinderGeometry(0.91, 0.91, 0.3, 48, 1, true),
+    darkWoodMaterial(),
+    "bingkai",
+  );
+  side.rotation.x = Math.PI / 2;
+  side.position.y = 1.3;
+  const skin = addMesh(group, new THREE.CircleGeometry(0.81, 48), skinMaterial(), "kulit");
+  skin.position.set(0, 1.3, 0.15);
+  return group;
+}
+
 const builders: Record<InstrumentId, () => THREE.Group> = {
+  gambo: buildGambo,
+  rebana: buildRebana,
   gendang: buildGendangBeleq,
   gong: buildGong,
   cilokaq: buildCilokaq,

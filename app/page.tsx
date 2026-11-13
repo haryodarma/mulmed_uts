@@ -4,12 +4,13 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import {
   cultures,
+  getInstrument,
   instruments,
   type Culture,
   type Instrument,
   type InstrumentId,
 } from "@/content/instruments";
-import { playPart } from "@/lib/audio/engine";
+import { playDemo, playPart } from "@/lib/audio/engine";
 import { InstrumentArt } from "@/components/ui/InstrumentArt";
 
 const StageCanvas = dynamic(() => import("@/components/scene/StageCanvas"), {
@@ -32,7 +33,7 @@ export default function Home() {
   const [ensemble, setEnsemble] = useState(false);
   const [filter, setFilter] = useState<Culture | "Semua">("Semua");
   const ensembleTimers = useRef<number[]>([]);
-  const playTimer = useRef<number | null>(null);
+  const stopDemo = useRef<(() => void) | null>(null);
 
   const selected =
     instruments.find((instrument) => instrument.id === selectedId) ??
@@ -40,6 +41,7 @@ export default function Home() {
   const selectedIndex = instruments.findIndex(
     (instrument) => instrument.id === selected.id,
   );
+  const instrumentCount = String(instruments.length).padStart(2, "0");
   const visible =
     filter === "Semua"
       ? instruments
@@ -48,21 +50,24 @@ export default function Home() {
   useEffect(() => {
     return () => {
       ensembleTimers.current.forEach((timer) => window.clearTimeout(timer));
-      if (playTimer.current) window.clearTimeout(playTimer.current);
+      stopDemo.current?.();
     };
   }, []);
 
   function selectInstrument(item: Instrument) {
+    stopDemo.current?.();
+    stopDemo.current = null;
     setSelectedId(item.id);
     setPlaying(false);
-    if (playTimer.current) window.clearTimeout(playTimer.current);
   }
 
   function playSelected() {
-    setPlaying(true);
-    playPart(selected.id, selected.parts[0].id);
-    if (playTimer.current) window.clearTimeout(playTimer.current);
-    playTimer.current = window.setTimeout(() => setPlaying(false), 780);
+    stopDemo.current?.();
+    stopDemo.current = playDemo(selected.id, () => {
+      stopDemo.current = null;
+      setPlaying(false);
+    });
+    setPlaying(stopDemo.current !== null);
   }
 
   function toggleEnsemble() {
@@ -89,7 +94,7 @@ export default function Home() {
   function exploreCulture(culture: Culture) {
     setFilter(culture);
     const first = instruments.find((instrument) => instrument.culture === culture);
-    if (first) setSelectedId(first.id);
+    if (first) selectInstrument(first);
 
     document.getElementById("jelajah")?.scrollIntoView({
       behavior: prefersReducedMotion() ? "auto" : "smooth",
@@ -138,7 +143,7 @@ export default function Home() {
             Jelajahi koleksi <span>↓</span>
           </a>
           <div className="hero-foot">
-            <span>06 ALAT MUSIK</span>
+            <span>{instrumentCount} ALAT MUSIK</span>
             <span className="foot-line" />
             <span>03 BUDAYA</span>
           </div>
@@ -148,9 +153,9 @@ export default function Home() {
           <div className="hero-orbit orbit-a" />
           <div className="hero-orbit orbit-b" />
           <div className="hero-sun" />
-          <StageCanvas selectedId={selected.id} onSelect={setSelectedId} />
+          <StageCanvas selectedId={selected.id} onSelect={(id) => selectInstrument(getInstrument(id))} />
           <div className="hero-label">
-            <span>{String(selectedIndex + 1).padStart(2, "0")} / 06</span>
+            <span>{String(selectedIndex + 1).padStart(2, "0")} / {instrumentCount}</span>
             <strong>{selected.name}</strong>
             <small>
               {selected.culture.toUpperCase()} · {selected.place.toUpperCase()}
@@ -207,7 +212,7 @@ export default function Home() {
                 {culture}
                 <span>
                   {culture === "Semua"
-                    ? "06"
+                    ? instrumentCount
                     : String(
                         instruments.filter((item) => item.culture === culture)
                           .length,
@@ -241,6 +246,28 @@ export default function Home() {
                 <h3>{selected.name}</h3>
                 <p className="selected-note">{selected.note}</p>
                 <p className="selected-detail">{selected.detail}</p>
+                {selected.documentation && (
+                  <div className="instrument-documentation">
+                    <dl>
+                      <dt>Nama lain</dt>
+                      <dd>{selected.documentation.aliases}</dd>
+                      <dt>Asal dan sebaran</dt>
+                      <dd>{selected.documentation.origin}</dd>
+                      <dt>Cara memainkan</dt>
+                      <dd>{selected.documentation.playing}</dd>
+                      <dt>Bahan utama</dt>
+                      <dd>{selected.documentation.materials}</dd>
+                    </dl>
+                    <details>
+                      <summary>Foto dan referensi</summary>
+                      <ul>
+                        {selected.documentation.sources.map(({ label, url }) => (
+                          <li key={url}><a href={url}>{label}</a></li>
+                        ))}
+                      </ul>
+                    </details>
+                  </div>
+                )}
                 <div className="selected-tags">
                   <span>{selected.kind}</span>
                   <span>Tradisi {selected.culture}</span>

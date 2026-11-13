@@ -221,6 +221,11 @@ export const InstrumentRig = forwardRef<InstrumentHandle, InstrumentRigProps>(
 
         switch (current.part) {
           case "kulit": {
+            if (instrument.id === "rebana") {
+              object.position.z =
+                origin.position.z - 0.035 * amplitude * Math.sin(elapsed * 58);
+              break;
+            }
             object.position.y =
               origin.position.y - 0.045 * amplitude * Math.sin(elapsed * 58);
             object.scale.set(

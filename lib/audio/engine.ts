@@ -5,6 +5,7 @@ type AudioContextConstructor = typeof AudioContext;
 let context: AudioContext | null = null;
 let master: GainNode | null = null;
 let noise: AudioBuffer | null = null;
+let demoOutput: GainNode | null = null;
 
 function getContext(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -106,7 +107,7 @@ function playToneNode(audio: AudioContext, options: ToneOptions): void {
   envelope.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
   output.connect(envelope);
-  envelope.connect(master ?? audio.destination);
+  envelope.connect(demoOutput ?? master ?? audio.destination);
 
   oscillator.start(now);
   oscillator.stop(now + duration + 0.05);
@@ -142,34 +143,41 @@ function playNoise(audio: AudioContext, options: NoiseOptions = {}): void {
 
   source.connect(filter);
   filter.connect(envelope);
-  envelope.connect(master ?? audio.destination);
+  envelope.connect(demoOutput ?? master ?? audio.destination);
 
   source.start(now);
   source.stop(now + duration + 0.02);
 }
 
-function playDrum(audio: AudioContext, base: number, strength = 1): void {
+function playDrum(audio: AudioContext, base: number, strength = 1, frame = false): void {
   const now = audio.currentTime;
   const body = audio.createOscillator();
   const envelope = audio.createGain();
 
   body.type = "sine";
   body.frequency.setValueAtTime(base, now);
-  body.frequency.exponentialRampToValueAtTime(base * 0.48, now + 0.22);
+  body.frequency.exponentialRampToValueAtTime(base * (frame ? 0.84 : 0.55), now + 0.12);
 
   envelope.gain.setValueAtTime(0.0001, now);
   envelope.gain.exponentialRampToValueAtTime(0.42 * strength, now + 0.008);
-  envelope.gain.exponentialRampToValueAtTime(0.0001, now + 0.55);
+  envelope.gain.exponentialRampToValueAtTime(0.0001, now + (frame ? 0.28 : 0.55));
 
   body.connect(envelope);
-  envelope.connect(master ?? audio.destination);
+  envelope.connect(demoOutput ?? master ?? audio.destination);
   body.start(now);
   body.stop(now + 0.6);
 
   playNoise(audio, {
     duration: 0.12,
     gain: 0.18 * strength,
-    frequency: 780,
+    frequency: frame ? 2100 : 780,
+    type: frame ? "bandpass" : "lowpass",
+  });
+
+  playToneNode(audio, {
+    frequency: base * 1.59,
+    duration: frame ? 0.16 : 0.27,
+    gain: 0.09 * strength,
   });
 }
 
@@ -179,6 +187,7 @@ function playGong(audio: AudioContext, base: number, strength = 1): void {
     { ratio: 1.47, gain: 0.09, duration: 2.8 },
     { ratio: 1.96, gain: 0.07, duration: 2.2 },
     { ratio: 2.72, gain: 0.045, duration: 1.7 },
+    { ratio: 3.81, gain: 0.025, duration: 0.9 },
   ];
 
   partials.forEach((partial, index) => {
@@ -200,14 +209,14 @@ function playGong(audio: AudioContext, base: number, strength = 1): void {
   });
 }
 
-function playString(audio: AudioContext, base: number, strength = 1): void {
+function playString(audio: AudioContext, base: number, strength = 1, gambo = false): void {
   playToneNode(audio, {
     frequency: base,
-    duration: 0.62,
+    duration: gambo ? 0.9 : 0.62,
     gain: 0.14 * strength,
     type: "triangle",
     attack: 0.004,
-    filter: 2600,
+    filter: gambo ? 1800 : 3200,
   });
 
   playToneNode(audio, {
@@ -226,27 +235,28 @@ function playString(audio: AudioContext, base: number, strength = 1): void {
   });
 }
 
-function playFlute(audio: AudioContext, base: number, strength = 1): void {
+function playReed(audio: AudioContext, base: number, bright = false): void {
   playToneNode(audio, {
     frequency: base,
     duration: 1.15,
-    gain: 0.11 * strength,
-    type: "sine",
+    gain: 0.11,
+    type: "sawtooth",
+    filter: base * (bright ? 5 : 3.4),
     attack: 0.06,
     vibrato: 4.5,
   });
 
   playToneNode(audio, {
-    frequency: base * 0.5,
+    frequency: base,
     duration: 0.9,
-    gain: 0.035 * strength,
+    gain: 0.035,
     type: "triangle",
     attack: 0.08,
   });
 
   playNoise(audio, {
     duration: 0.65,
-    gain: 0.035 * strength,
+    gain: 0.035,
     frequency: base * 2.2,
     type: "bandpass",
   });
@@ -296,7 +306,7 @@ export function playPart(
       break;
     }
     case "serune": {
-      playFlute(audio, part === "corong" ? 466 : part === "lubang" ? 523 : 440);
+      playReed(audio, part === "corong" ? 466 : part === "lubang" ? 523 : 440);
       break;
     }
     case "genang": {
@@ -310,13 +320,66 @@ export function playPart(
       break;
     }
     case "silu": {
-      playFlute(audio, part === "corong" ? 587 : part === "lubang" ? 659 : 523);
+      playReed(audio, part === "corong" ? 587 : part === "lubang" ? 659 : 523, true);
+      break;
+    }
+    case "gambo": {
+      playString(audio, part === "leher" ? 349 : 294, part === "badan" ? 0.55 : 1, true);
+      break;
+    }
+    case "rebana": {
+      playDrum(audio, part === "kulit" ? 180 : 245, part === "kulit" ? 1 : 0.55, true);
       break;
     }
     default: {
       playToneNode(audio, { frequency: 220, duration: 0.5 });
     }
   }
+}
+
+// shortcut: Frasa disintesis; gunakan rekaman berizin jika tersedia.
+const demoPhrases = {
+  gendang: [[0, "kulit"], [0.45, "pemukul"], [0.7, "pemukul"], [1.2, "kulit"], [1.85, "badan"], [2.35, "kulit"]],
+  gong: [[0, "pencu"], [0.8, "oncer"], [1.3, "oncer"], [1.9, "gong"]],
+  cilokaq: [[0, "badan"], [0.4, "dawai"], [0.8, "leher"], [1.35, "dawai"], [1.75, "leher"], [2.35, "badan"]],
+  serune: [[0, "badan"], [0.78, "corong"], [1.56, "lubang"], [2.34, "corong"]],
+  genang: [[0, "gong"], [0.55, "genang"], [0.86, "genang"], [1.42, "pencu"], [2, "genang"], [2.35, "genang"]],
+  silu: [[0, "lubang"], [0.58, "corong"], [1.2, "badan"], [2.1, "lubang"], [2.62, "corong"]],
+  gambo: [[0, "dawai"], [0.65, "leher"], [1.04, "dawai"], [1.65, "badan"], [2.05, "leher"], [2.48, "dawai"]],
+  rebana: [[0, "kulit"], [0.34, "bingkai"], [0.57, "kulit"], [1.16, "kulit"], [1.55, "bingkai"], [1.81, "bingkai"], [2.35, "kulit"]],
+} satisfies Record<InstrumentId, [number, string][]>;
+
+export function playDemo(instrument: InstrumentId, onEnd: () => void): (() => void) | null {
+  const audio = getContext();
+  if (!audio) return null;
+
+  const output = audio.createGain();
+  output.connect(master ?? audio.destination);
+  const timers: number[] = [];
+  const stop = () => {
+    timers.forEach((timer) => window.clearTimeout(timer));
+    output.disconnect();
+  };
+
+  for (const offset of [0, 3.1]) {
+    for (const [time, part] of demoPhrases[instrument]) {
+      timers.push(window.setTimeout(() => {
+        demoOutput = output;
+        try {
+          playPart(instrument, part);
+        } finally {
+          demoOutput = null;
+        }
+      }, (offset + time) * 1000));
+    }
+  }
+
+  const duration = instrument === "gong" || instrument === "genang" ? 8700 : 7000;
+  timers.push(window.setTimeout(() => {
+    stop();
+    onEnd();
+  }, duration));
+  return stop;
 }
 
 /** Bunyi sederhana untuk fallback tanpa WebGL. */

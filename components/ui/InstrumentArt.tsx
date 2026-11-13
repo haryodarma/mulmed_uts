@@ -29,7 +29,7 @@ export function InstrumentArt({
           {instrument.id === "genang" && <span className="small-gong" />}
         </>
       )}
-      {instrument.id === "cilokaq" && (
+      {(instrument.id === "cilokaq" || instrument.id === "gambo") && (
         <>
           <span className="string-body" />
           <span className="string-neck" />
@@ -38,6 +38,7 @@ export function InstrumentArt({
           <span className="string-line three" />
         </>
       )}
+      {instrument.id === "rebana" && <span className="rebana-face" />}
       {(instrument.id === "serune" || instrument.id === "silu") && (
         <>
           <span className="flute-bell" />
